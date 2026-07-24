@@ -21,15 +21,12 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             binary: brarchive-cli
+          - target: aarch64-linux-android
+            os: ubuntu-latest
+            binary: brarchive-cli
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             binary: brarchive-cli.exe
-          - target: x86_64-apple-darwin
-            os: macos-15-intel
-            binary: brarchive-cli
-          - target: aarch64-apple-darwin
-            os: macos-15
-            binary: brarchive-cli
 
     steps:
       - uses: actions/checkout@v4
@@ -62,29 +59,9 @@ jobs:
           name: cli-${{ matrix.target }}
           path: ${{ env.ASSET }}
 
-  build-wasm:
-    name: Build WASM
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Build WASM
-        run: wasm-pack build wasm/ --release --target web
-      - name: Package WASM
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          cd wasm/pkg && zip -r ../../brarchive-v${VERSION}-wasm.zip .
-          echo "ASSET=brarchive-v${VERSION}-wasm.zip" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v4
-        with:
-          name: wasm
-          path: ${{ env.ASSET }}
-
   release:
     name: Create GitHub Release
-    needs: [build-cli, build-wasm]
+    needs: [build-cli]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4

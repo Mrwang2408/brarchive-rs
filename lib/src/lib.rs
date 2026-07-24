@@ -19,7 +19,7 @@ pub fn serialize<I, K, V>(data: I) -> Result<Vec<u8>, BrArchiveError>
 where
     I: IntoIterator<Item = (K, V)>,
     K: AsRef<str>,
-    V: AsRef<str>,
+    V: AsRef<[u8]>,
 {
     serialize_with(data, SerializeOptions::default())
 }
@@ -32,7 +32,7 @@ pub fn serialize_with<I, K, V>(
 where
     I: IntoIterator<Item = (K, V)>,
     K: AsRef<str>,
-    V: AsRef<str>,
+    V: AsRef<[u8]>,
 {
     let data: Vec<(K, V)> = data.into_iter().collect();
     let mut buf = Vec::new();
@@ -53,7 +53,7 @@ where
         let mut content_index: std::collections::HashMap<Vec<u8>, u32> =
             std::collections::HashMap::new();
         for (_, content) in &data {
-            let bytes = content.as_ref().as_bytes().to_vec();
+            let bytes = content.as_ref().to_vec();
             let len = bytes.len() as u32;
             if let Some(&existing_offset) = content_index.get(&bytes) {
                 entries.push((existing_offset, len, None));
@@ -67,7 +67,7 @@ where
         }
     } else {
         for (_, content) in &data {
-            let bytes = content.as_ref().as_bytes().to_vec();
+            let bytes = content.as_ref().to_vec();
             let len = bytes.len() as u32;
             entries.push((current_offset, len, Some(bytes)));
             current_offset = current_offset
@@ -121,7 +121,7 @@ pub fn list(data: &[u8]) -> Result<Vec<String>, BrArchiveError> {
 /// ```
 pub fn deserialize<C>(data: &[u8]) -> Result<C, BrArchiveError>
 where
-    C: FromIterator<(String, String)>,
+    C: FromIterator<(String, Vec<u8>)>,
 {
     let mut buf = Cursor::new(data);
     let header = v1::read_header(&mut buf)?;
